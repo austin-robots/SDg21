@@ -1,0 +1,82 @@
+PROGRAM Maint
+#info= QLD
+BOF
+
+
+(**)
+
+SOR  [0,1] (**) (**)  XIC  [1,0] (*ManMode*) (**)
+EOR [2,0]
+
+
+(*NeckYaw Enable*)
+
+SOR  [0,3] (**) (**)  
+ BST  XIC  [1,0] (*ManMode*) (**)  XIC  [2,0] (*NeckYawEn*) (**)
+   NXB  XIC  [1,1] (*ModbusDigitalOutput[7]*) (**)
+ BND
+  OTE  [3,0] (*ModbusDigitalOutput[7]*) (**)
+EOR [4,0]
+
+
+(*NeckPitch Enable*)
+
+SOR  [0,6] (**) (**)  
+ BST  XIC  [1,0] (*ManMode*) (**)  XIC  [2,0] (*NeckPitchEn*) (**)
+   NXB  XIC  [1,1] (*ModbusDigitalOutput[8]*) (**)
+ BND
+  OTE  [3,0] (*ModbusDigitalOutput[8]*) (**)
+EOR [4,0]
+
+
+(*Body Enable*)
+
+SOR  [0,9] (**) (**)  
+ BST  XIC  [1,0] (*ManMode*) (**)  XIC  [2,0] (*BodyEn*) (**)
+   NXB  XIC  [1,1] (*ModbusDigitalOutput[9]*) (**)
+ BND
+  OTE  [3,0] (*ModbusDigitalOutput[9]*) (**)
+EOR [4,0]
+
+
+(*Jaw Enable*)
+
+SOR  [0,12] (**) (**)  
+ BST  XIC  [1,0] (*ManMode*) (**)  XIC  [2,0] (*JawEn*) (**)
+   NXB  XIC  [1,1] (*ModbusDigitalOutput[10]*) (**)
+ BND
+  OTE  [3,0] (*ModbusDigitalOutput[10]*) (**)
+EOR [4,0]
+
+
+(*Skull Enable*)
+
+SOR  [0,15] (**) (**)  
+ BST  XIC  [1,0] (*ManMode*) (**)  XIC  [2,0] (*SkullEn*) (**)
+   NXB  XIC  [1,1] (*ModbusDigitalOutput[11]*) (**)
+ BND
+  OTE  [3,0] (*ModbusDigitalOutput[11]*) (**)
+EOR [4,0]
+
+
+(*Tail Enable*)
+
+SOR  [0,18] (**) (**)  
+ BST  XIC  [1,0] (*ManMode*) (**)  XIC  [2,0] (*TailEn*) (**)
+   NXB  XIC  [1,1] (*ModbusDigitalOutput[12]*) (**)
+ BND
+  OTE  [3,0] (*ModbusDigitalOutput[12]*) (**)
+EOR [4,0]
+
+
+(*SAE Enable*)
+
+SOR  [0,21] (**) (**)  
+ BST  XIC  [1,0] (*ManMode*) (**)  XIC  [2,0] (*MBEn*) (**)
+   NXB  XIC  [1,1] (*ModbusDigitalOutput[13]*) (**)
+ BND
+  OTE  [3,0] (*ModbusDigitalOutput[13]*) (**)
+EOR [4,0]
+EOF
+#end_info
+END_PROGRAM

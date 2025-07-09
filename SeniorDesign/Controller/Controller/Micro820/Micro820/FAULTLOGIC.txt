@@ -1,0 +1,369 @@
+(****** QuickLD compiler *******************************)
+(****** Copyright Rockwell Automation Canada, Ltd ******)
+(****** ST *********************************************)
+
+(*************** Rung **********************************)
+(**)
+__STEPPRAGMA
+0,1
+__ENDSTEPPRAGMA
+(*Label :*)(**)
+__EDTB1 := _IO_EM_DI_05 AND NOT(_IO_EM_DI_04) ;
+__EDTB2 := HMIRESET ;
+FAULTR := (__EDTB1 OR __EDTB2) ;
+
+(*************** Code for the end of Rung **************)
+__GL __LG0001 ;
+
+
+(*************** Rung **********************************)
+(**)
+__STEPPRAGMA
+0,4
+__ENDSTEPPRAGMA
+(*Label :*)(**)
+__EDTB3 := FAULTMPB ;
+__EDTB4 := FAULTRPB ;
+__EDTB5 := FAULTRPBSTUCK ;
+__EDTB6 := FAULTMPBSTUCK ;
+__EDTB7 := FAULTSTOP ;
+__EDTB8 := FAULTSSLPB ;
+__EDTB9 := FAULTSSRPB ;
+__EDTB10 := FAULTESPB ;
+__EDTB11 := FAULTESPBSTUCK ;
+__EDTB12 := FAULTMB1LOW ;
+__EDTB13 := FAULTMB2LOW ;
+__EDTB14 := FAULTMB3LOW ;
+__EDTB15 := FAULTMB4LOW ;
+__EDTB16 := (__EDTB14 OR __EDTB15) ;
+__EDTB17 := (__EDTB13 OR __EDTB16) ;
+__EDTB18 := (__EDTB12 OR __EDTB17) ;
+__EDTB19 := (__EDTB11 OR __EDTB18) ;
+__EDTB20 := (__EDTB10 OR __EDTB19) ;
+__EDTB21 := (__EDTB9 OR __EDTB20) ;
+__EDTB22 := (__EDTB8 OR __EDTB21) ;
+__EDTB23 := (__EDTB7 OR __EDTB22) ;
+__EDTB24 := (__EDTB6 OR __EDTB23) ;
+__EDTB25 := (__EDTB5 OR __EDTB24) ;
+__EDTB26 := (__EDTB4 OR __EDTB25) ;
+FAULT := (__EDTB3 OR __EDTB26) ;
+
+(*************** Code for the end of Rung **************)
+__GL __LG0002 ;
+
+
+(*************** Rung **********************************)
+(**)
+__STEPPRAGMA
+0,18
+__ENDSTEPPRAGMA
+(*Label :*)(**)
+ESTOP_RESET := ESTOP AND ESTOPCONFIRM AND NOT(FAULT) ;
+
+(*************** Code for the end of Rung **************)
+__GL __LG0003 ;
+
+
+(*************** Rung **********************************)
+(**)
+__STEPPRAGMA
+0,20
+__ENDSTEPPRAGMA
+(*Label :*)(**)
+
+(*************** Code for the end of Rung **************)
+__GL __LG0004 ;
+
+
+(*************** Rung **********************************)
+(**)
+__STEPPRAGMA
+0,21
+__ENDSTEPPRAGMA
+(*Label :*)(**)
+(* FB call: TON *)
+TON_2(NOT(_IO_EM_DI_09) AND NOT(_IO_EM_DI_08), T#1S) ;
+__EDTB27 := TON_2.Q ;
+__EDTB28 := NOT(FAULTR) AND FAULTRPB ;
+FAULTRPB := (__EDTB27 OR __EDTB28) ;
+
+(*************** Code for the end of Rung **************)
+__GL __LG0005 ;
+
+
+(*************** Rung **********************************)
+(**)
+__STEPPRAGMA
+0,25
+__ENDSTEPPRAGMA
+(*Label :*)(**)
+(* FB call: TON *)
+TON_6(_IO_EM_DI_09 AND NOT(_IO_EM_DI_08), T#7S) ;
+__EDTB29 := TON_6.Q ;
+__EDTB30 := NOT(FAULTR) AND FAULTRPBSTUCK ;
+FAULTRPBSTUCK := (__EDTB29 OR __EDTB30) ;
+
+(*************** Code for the end of Rung **************)
+__GL __LG0006 ;
+
+
+(*************** Rung **********************************)
+(**)
+__STEPPRAGMA
+0,29
+__ENDSTEPPRAGMA
+(*Label :*)(**)
+(* FB call: TON *)
+TON_5(NOT(_IO_EM_DI_10) AND NOT(_IO_EM_DI_11), T#1S) ;
+__EDTB31 := TON_5.Q ;
+__EDTB32 := NOT(FAULTR) AND FAULTSSLPB ;
+FAULTSSLPB := (__EDTB31 OR __EDTB32) ;
+
+(*************** Code for the end of Rung **************)
+__GL __LG0007 ;
+
+
+(*************** Rung **********************************)
+(**)
+__STEPPRAGMA
+0,33
+__ENDSTEPPRAGMA
+(*Label :*)(**)
+(* FB call: TON *)
+TON_7(NOT(_IO_EM_DI_01) AND NOT(_IO_EM_DI_00), T#7S) ;
+__EDTB33 := TON_7.Q ;
+__EDTB34 := NOT(FAULTR) AND FAULTSSRPB ;
+FAULTSSRPB := (__EDTB33 OR __EDTB34) ;
+
+(*************** Code for the end of Rung **************)
+__GL __LG0008 ;
+
+
+(*************** Rung **********************************)
+(**)
+__STEPPRAGMA
+0,37
+__ENDSTEPPRAGMA
+(*Label :*)(**)
+(* FB call: TON *)
+TON_9(NOT(_IO_EM_DI_06) AND NOT(_IO_EM_DI_07), T#1S) ;
+__EDTB35 := TON_9.Q ;
+__EDTB36 := NOT(FAULTR) AND FAULTMPB ;
+FAULTMPB := (__EDTB35 OR __EDTB36) ;
+
+(*************** Code for the end of Rung **************)
+__GL __LG0009 ;
+
+
+(*************** Rung **********************************)
+(**)
+__STEPPRAGMA
+0,41
+__ENDSTEPPRAGMA
+(*Label :*)(**)
+(* FB call: TON *)
+TON_12(_IO_EM_DI_07 AND NOT(_IO_EM_DI_06), T#7S) ;
+__EDTB37 := TON_12.Q ;
+__EDTB38 := NOT(FAULTR) AND FAULTMPBSTUCK ;
+FAULTMPBSTUCK := (__EDTB37 OR __EDTB38) ;
+
+(*************** Code for the end of Rung **************)
+__GL __LG000A ;
+
+
+(*************** Rung **********************************)
+(**)
+__STEPPRAGMA
+0,45
+__ENDSTEPPRAGMA
+(*Label :*)(**)
+(* FB call: TON *)
+TON_11(NOT(_IO_EM_DI_02) AND NOT(_IO_EM_DI_03), T#1S) ;
+__EDTB39 := TON_11.Q ;
+__EDTB40 := NOT(FAULTR) AND FAULTESPB ;
+FAULTESPB := (__EDTB39 OR __EDTB40) ;
+
+(*************** Code for the end of Rung **************)
+__GL __LG000B ;
+
+
+(*************** Rung **********************************)
+(**)
+__STEPPRAGMA
+0,49
+__ENDSTEPPRAGMA
+(*Label :*)(**)
+(* FB call: TON *)
+TON_8(_IO_EM_DI_03 AND NOT(_IO_EM_DI_02), T#7S) ;
+__EDTB41 := TON_8.Q ;
+__EDTB42 := NOT(FAULTR) AND FAULTESPBSTUCK ;
+FAULTESPBSTUCK := (__EDTB41 OR __EDTB42) ;
+
+(*************** Code for the end of Rung **************)
+__GL __LG000C ;
+
+
+(*************** Rung **********************************)
+(**)
+__STEPPRAGMA
+0,53
+__ENDSTEPPRAGMA
+(*Label :*)(**)
+__EDTB44 := TRUE ;
+IF __EDTB44 THEN
+(* Operator output on : <= with __EDTB43 *)
+__EDTB43 := (MODBUSANALOGINPUT[2] <= 100) ;
+ELSE
+__EDTB43 := FALSE ;
+END_IF ;
+__MO_LESSEQUAL_1 := __EDTB43 ;
+__EDTB45 := __EDTB43 ;
+__EDTB46 := NOT(FAULTR) AND FAULTMB2LOW ;
+FAULTMB2LOW := (__EDTB45 OR __EDTB46) ;
+
+(*************** Code for the end of Rung **************)
+__GL __LG000D ;
+
+
+(*************** Rung **********************************)
+(**)
+__STEPPRAGMA
+0,58
+__ENDSTEPPRAGMA
+(*Label :*)(**)
+__EDTB48 := TRUE ;
+IF __EDTB48 THEN
+(* Operator output on : <= with __EDTB47 *)
+__EDTB47 := (MODBUSANALOGINPUT[3] <= 100) ;
+ELSE
+__EDTB47 := FALSE ;
+END_IF ;
+__MO_LESSEQUAL_2 := __EDTB47 ;
+__EDTB49 := __EDTB47 ;
+__EDTB50 := NOT(FAULTR) AND FAULTMB3LOW ;
+FAULTMB3LOW := (__EDTB49 OR __EDTB50) ;
+
+(*************** Code for the end of Rung **************)
+__GL __LG000E ;
+
+
+(*************** Rung **********************************)
+(**)
+__STEPPRAGMA
+0,63
+__ENDSTEPPRAGMA
+(*Label :*)(**)
+__EDTB52 := TRUE ;
+IF __EDTB52 THEN
+(* Operator output on : <= with __EDTB51 *)
+__EDTB51 := (MODBUSANALOGINPUT[4] <= 100) ;
+ELSE
+__EDTB51 := FALSE ;
+END_IF ;
+__MO_LESSEQUAL_3 := __EDTB51 ;
+__EDTB53 := __EDTB51 ;
+__EDTB54 := NOT(FAULTR) AND FAULTMB4LOW ;
+FAULTMB4LOW := (__EDTB53 OR __EDTB54) ;
+
+(*************** Code for the end of Rung **************)
+__GL __LG000F ;
+
+
+(*************** Rung **********************************)
+(**)
+__STEPPRAGMA
+0,68
+__ENDSTEPPRAGMA
+(*Label :*)(**)
+__EDTB56 := TRUE ;
+IF __EDTB56 THEN
+(* Operator output on : <= with __EDTB55 *)
+__EDTB55 := (MODBUSANALOGINPUT[1] <= 100) ;
+ELSE
+__EDTB55 := FALSE ;
+END_IF ;
+__MO_LESSEQUAL_4 := __EDTB55 ;
+__EDTB57 := __EDTB55 ;
+__EDTB58 := NOT(FAULTR) AND FAULTMB1LOW ;
+FAULTMB1LOW := (__EDTB57 OR __EDTB58) ;
+
+(*************** Code for the end of Rung **************)
+__GL __LG0010 ;
+
+
+(*************** Rung **********************************)
+(**)
+__STEPPRAGMA
+0,73
+__ENDSTEPPRAGMA
+(*Label :*)(**)
+
+(*************** Code for the end of Rung **************)
+__GL __LG0011 ;
+
+
+(*************** Code for the end of File **************)
+__GL __LG0000 ;
+
+
+
+(*************** Local Symbols table *******************)
+(* __EDTB1 *)
+(* __EDTB2 *)
+(* __EDTB3 *)
+(* __EDTB4 *)
+(* __EDTB5 *)
+(* __EDTB6 *)
+(* __EDTB7 *)
+(* __EDTB8 *)
+(* __EDTB9 *)
+(* __EDTB10 *)
+(* __EDTB11 *)
+(* __EDTB12 *)
+(* __EDTB13 *)
+(* __EDTB14 *)
+(* __EDTB15 *)
+(* __EDTB16 *)
+(* __EDTB17 *)
+(* __EDTB18 *)
+(* __EDTB19 *)
+(* __EDTB20 *)
+(* __EDTB21 *)
+(* __EDTB22 *)
+(* __EDTB23 *)
+(* __EDTB24 *)
+(* __EDTB25 *)
+(* __EDTB26 *)
+(* __EDTB27 *)
+(* __EDTB28 *)
+(* __EDTB29 *)
+(* __EDTB30 *)
+(* __EDTB31 *)
+(* __EDTB32 *)
+(* __EDTB33 *)
+(* __EDTB34 *)
+(* __EDTB35 *)
+(* __EDTB36 *)
+(* __EDTB37 *)
+(* __EDTB38 *)
+(* __EDTB39 *)
+(* __EDTB40 *)
+(* __EDTB41 *)
+(* __EDTB42 *)
+(* __EDTB43 *)
+(* __EDTB44 *)
+(* __EDTB45 *)
+(* __EDTB46 *)
+(* __EDTB47 *)
+(* __EDTB48 *)
+(* __EDTB49 *)
+(* __EDTB50 *)
+(* __EDTB51 *)
+(* __EDTB52 *)
+(* __EDTB53 *)
+(* __EDTB54 *)
+(* __EDTB55 *)
+(* __EDTB56 *)
+(* __EDTB57 *)
+(* __EDTB58 *)
+

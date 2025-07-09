@@ -1,0 +1,389 @@
+PROGRAM FaultLogic
+#info= QLD
+BOF
+
+
+(*Fault Reset Button*)
+
+SOR  [0,1] (**) (**)  XIC  [1,0] (*_IO_EM_DI_05*) (*LPB_NO*)  XIO  [2,0] (*_IO_EM_DI_04*) (*LPB_NC*)  OTE  [3,0] (*FaultR*) (**)
+EOR [4,0]
+
+
+(*Main Fault String*)
+
+SOR  [0,3] (**) (**)  
+ BST  XIC  [1,0] (*FaultMPB*) (**)
+   NXB  
+ BST  XIC  [1,1] (*FaultMPBStuck*) (**)
+   NXB  
+ BST  XIC  [1,2] (*FaultRPB*) (**)
+   NXB  
+ BST  XIC  [1,3] (*FaultRPBStuck*) (**)
+   NXB  
+ BST  XIC  [1,4] (*FaultESPB*) (**)
+   NXB  
+ BST  
+ BST  XIC  [1,5] (*FaultESPBStuck*) (**)
+   NXB  XIC  [1,6] (*FaultLPB*) (**)
+ BND
+
+   NXB  
+ BST  XIC  [1,7] (*NeckYawLow*) (**)
+   NXB  
+ BST  XIC  [1,8] (*NeckPitchLow*) (**)
+   NXB  
+ BST  XIC  [1,9] (*BodyLow*) (**)
+   NXB  
+ BST  XIC  [1,10] (*JawLow*) (**)
+   NXB  
+ BST  XIC  [1,11] (*SkullLow*) (**)
+   NXB  
+ BST  XIC  [1,12] (*TailLow*) (**)
+   NXB  
+ BST  XIC  [1,13] (*NeckYawHigh*) (**)
+   NXB  
+ BST  XIC  [1,14] (*NeckPitchHigh*) (**)
+   NXB  
+ BST  XIC  [1,15] (*BodyHigh*) (**)
+   NXB  
+ BST  XIC  [1,16] (*JawHigh*) (**)
+   NXB  
+ BST  XIC  [1,17] (*SkullHigh*) (**)
+   NXB  
+ BST  XIC  [1,18] (*TailHigh*) (**)
+   NXB  
+ BST  XIC  [1,19] (*NeckYawCurr*) (**)
+   NXB  
+ BST  XIC  [1,20] (*NeckPitchCurr*) (**)
+   NXB  
+ BST  
+ BST  XIC  [1,21] (*BodyCurr*) (**)
+   NXB  
+ BST  XIC  [1,22] (*JawCurr*) (**)
+   NXB  XIC  [1,23] (*SkullCurr*) (**)
+ BND
+
+ BND
+
+   NXB  
+ BST  XIC  [1,24] (*TailCurr*) (**)
+   NXB  XIC  [1,25] (*FaultHeart*) (**)
+ BND
+
+ BND
+
+ BND
+
+ BND
+
+ BND
+
+ BND
+
+ BND
+
+ BND
+
+ BND
+
+ BND
+
+ BND
+
+ BND
+
+ BND
+
+ BND
+
+ BND
+
+ BND
+
+ BND
+
+ BND
+
+ BND
+
+ BND
+
+ BND
+
+ BND
+  OTE  [2,0] (*Fault*) (**)
+EOR [3,0]
+
+
+(**)
+
+SOR  [0,30] (**) (**)
+EOR [1,0]
+
+
+(**)
+
+SOR  [0,31] (**) (**)  
+ BST  XIO  [1,0] (*_IO_EM_DI_09*) (*RPB_NO*)  XIO  [2,0] (*_IO_EM_DI_08*) (*RPB_NC*)  FB  [3,0] (*TON*) (*TON_2*) ( (*IN:IN*)(**) (**)  , (*PT:PT*)(*T#1s*) (**) ; (*Q:Q*)(**) (**)  , (*ET:ET*)(**) (**) )
+   NXB  XIO  [1,2] (*FaultR*) (**)  XIC  [2,2] (*FaultRPB*) (**)
+ BND
+  OTE  [6,0] (*FaultRPB*) (**)
+EOR [7,0]
+
+
+(**)
+
+SOR  [0,35] (**) (**)  
+ BST  XIC  [1,0] (*_IO_EM_DI_09*) (*RPB_NO*)  XIO  [2,0] (*_IO_EM_DI_08*) (*RPB_NC*)  FB  [3,0] (*TON*) (*TON_6*) ( (*IN:IN*)(**) (**)  , (*PT:PT*)(*T#7s*) (**) ; (*Q:Q*)(**) (**)  , (*ET:ET*)(**) (**) )
+   NXB  XIO  [1,2] (*FaultR*) (**)  XIC  [2,2] (*FaultRPBStuck*) (**)
+ BND
+  OTE  [6,0] (*FaultRPBStuck*) (**)
+EOR [7,0]
+
+
+(**)
+
+SOR  [0,39] (**) (**)  
+ BST  XIO  [1,0] (*_IO_EM_DI_06*) (*MPB_NC*)  XIO  [2,0] (*_IO_EM_DI_07*) (*MPB_NO*)  FB  [3,0] (*TON*) (*TON_9*) ( (*IN:IN*)(**) (**)  , (*PT:PT*)(*T#1s*) (**) ; (*Q:Q*)(**) (**)  , (*ET:ET*)(**) (**) )
+   NXB  XIO  [1,2] (*FaultR*) (**)  XIC  [2,2] (*FaultMPB*) (**)
+ BND
+  OTE  [6,0] (*FaultMPB*) (**)
+EOR [7,0]
+
+
+(**)
+
+SOR  [0,43] (**) (**)  
+ BST  XIC  [1,0] (*_IO_EM_DI_07*) (*MPB_NO*)  XIO  [2,0] (*_IO_EM_DI_06*) (*MPB_NC*)  FB  [3,0] (*TON*) (*TON_12*) ( (*IN:IN*)(**) (**)  , (*PT:PT*)(*T#7s*) (**) ; (*Q:Q*)(**) (**)  , (*ET:ET*)(**) (**) )
+   NXB  XIO  [1,2] (*FaultR*) (**)  XIC  [2,2] (*FaultMPBStuck*) (**)
+ BND
+  OTE  [6,0] (*FaultMPBStuck*) (**)
+EOR [7,0]
+
+
+(**)
+
+SOR  [0,47] (**) (**)  
+ BST  XIO  [1,0] (*_IO_EM_DI_02*) (*ES_NC*)  XIO  [2,0] (*_IO_EM_DI_03*) (*ES_NO*)  FB  [3,0] (*TON*) (*TON_11*) ( (*IN:IN*)(**) (**)  , (*PT:PT*)(*T#1s*) (**) ; (*Q:Q*)(**) (**)  , (*ET:ET*)(**) (**) )
+   NXB  XIO  [1,2] (*FaultR*) (**)  XIC  [2,2] (*FaultESPB*) (**)
+ BND
+  OTE  [6,0] (*FaultESPB*) (**)
+EOR [7,0]
+
+
+(**)
+
+SOR  [0,51] (**) (**)  
+ BST  XIC  [1,0] (*_IO_EM_DI_03*) (*ES_NO*)  XIO  [2,0] (*_IO_EM_DI_02*) (*ES_NC*)  FB  [3,0] (*TON*) (*TON_8*) ( (*IN:IN*)(**) (**)  , (*PT:PT*)(*T#7s*) (**) ; (*Q:Q*)(**) (**)  , (*ET:ET*)(**) (**) )
+   NXB  XIO  [1,2] (*FaultR*) (**)  XIC  [2,2] (*FaultESPBStuck*) (**)
+ BND
+  OTE  [6,0] (*FaultESPBStuck*) (**)
+EOR [7,0]
+
+
+(**)
+
+SOR  [0,55] (**) (**)  
+ BST  XIO  [1,0] (*_IO_EM_DI_04*) (*LPB_NC*)  XIO  [2,0] (*_IO_EM_DI_05*) (*LPB_NO*)  FB  [3,0] (*TON*) (*TON_5*) ( (*IN:IN*)(**) (**)  , (*PT:PT*)(*T#1s*) (**) ; (*Q:Q*)(**) (**)  , (*ET:ET*)(**) (**) )
+   NXB  XIO  [1,2] (*FaultR*) (**)  XIC  [2,2] (*FaultLPB*) (**)
+ BND
+  OTE  [6,0] (*FaultLPB*) (**)
+EOR [7,0]
+
+
+(*Neck Yaw Low Position*)
+
+SOR  [0,59] (**) (**)  
+ BST  FB  [1,0] (*<=*) (*1*) ( (*EN:EN*)(**) (**)  , (*i1:*)(*ModbusAnalogInput[1]*) (**)  , (*i2:*)(*100*) (**) ; (*o1:*)(**) (**) )
+   NXB  XIO  [1,3] (*FaultR*) (**)  XIC  [2,3] (*NeckYawLow*) (**)
+ BND
+  OTE  [4,0] (*NeckYawLow*) (**)
+EOR [5,0]
+
+
+(*Neck Pitch Low Position*)
+
+SOR  [0,64] (**) (**)  
+ BST  FB  [1,0] (*<=*) (*1*) ( (*EN:EN*)(**) (**)  , (*i1:*)(*ModbusAnalogInput[2]*) (**)  , (*i2:*)(*100*) (**) ; (*o1:*)(**) (**) )
+   NXB  XIO  [1,3] (*FaultR*) (**)  XIC  [2,3] (*NeckPitchLow*) (**)
+ BND
+  OTE  [4,0] (*NeckPitchLow*) (**)
+EOR [5,0]
+
+
+(*Body Low Position*)
+
+SOR  [0,69] (**) (**)  
+ BST  FB  [1,0] (*<=*) (*1*) ( (*EN:EN*)(**) (**)  , (*i1:*)(*ModbusAnalogInput[3]*) (**)  , (*i2:*)(*100*) (**) ; (*o1:*)(**) (**) )
+   NXB  XIO  [1,3] (*FaultR*) (**)  XIC  [2,3] (*BodyLow*) (**)
+ BND
+  OTE  [4,0] (*BodyLow*) (**)
+EOR [5,0]
+
+
+(*Jaw Low Position*)
+
+SOR  [0,74] (**) (**)  
+ BST  FB  [1,0] (*<=*) (*1*) ( (*EN:EN*)(**) (**)  , (*i1:*)(*ModbusAnalogInput[4]*) (**)  , (*i2:*)(*100*) (**) ; (*o1:*)(**) (**) )
+   NXB  XIO  [1,3] (*FaultR*) (**)  XIC  [2,3] (*JawLow*) (**)
+ BND
+  OTE  [4,0] (*JawLow*) (**)
+EOR [5,0]
+
+
+(*Skull Low Position*)
+
+SOR  [0,79] (**) (**)  
+ BST  FB  [1,0] (*<=*) (*1*) ( (*EN:EN*)(**) (**)  , (*i1:*)(*ModbusAnalogInput[5]*) (**)  , (*i2:*)(*100*) (**) ; (*o1:*)(**) (**) )
+   NXB  XIO  [1,3] (*FaultR*) (**)  XIC  [2,3] (*SkullLow*) (**)
+ BND
+  OTE  [4,0] (*SkullLow*) (**)
+EOR [5,0]
+
+
+(*Tail Low Position*)
+
+SOR  [0,84] (**) (**)  
+ BST  FB  [1,0] (*<=*) (*1*) ( (*EN:EN*)(**) (**)  , (*i1:*)(*ModbusAnalogInput[6]*) (**)  , (*i2:*)(*100*) (**) ; (*o1:*)(**) (**) )
+   NXB  XIO  [1,3] (*FaultR*) (**)  XIC  [2,3] (*TailLow*) (**)
+ BND
+  OTE  [4,0] (*TailLow*) (**)
+EOR [5,0]
+
+
+(*Neck Yaw High Position*)
+
+SOR  [0,89] (**) (**)  
+ BST  FB  [1,0] (*>=*) (*2*) ( (*EN:EN*)(**) (**)  , (*i1:*)(*ModbusAnalogInput[1]*) (**)  , (*i2:*)(*240*) (**) ; (*o1:*)(**) (**) )
+   NXB  XIO  [1,3] (*FaultR*) (**)  XIC  [2,3] (*NeckYawHigh*) (**)
+ BND
+  OTE  [4,0] (*NeckYawHigh*) (**)
+EOR [5,0]
+
+
+(*Neck Pitch High Position*)
+
+SOR  [0,94] (**) (**)  
+ BST  FB  [1,0] (*>=*) (*2*) ( (*EN:EN*)(**) (**)  , (*i1:*)(*ModbusAnalogInput[2]*) (**)  , (*i2:*)(*240*) (**) ; (*o1:*)(**) (**) )
+   NXB  XIO  [1,3] (*FaultR*) (**)  XIC  [2,3] (*NeckPitchHigh*) (**)
+ BND
+  OTE  [4,0] (*NeckPitchHigh*) (**)
+EOR [5,0]
+
+
+(*Body High Position*)
+
+SOR  [0,99] (**) (**)  
+ BST  FB  [1,0] (*>=*) (*2*) ( (*EN:EN*)(**) (**)  , (*i1:*)(*ModbusAnalogInput[3]*) (**)  , (*i2:*)(*240*) (**) ; (*o1:*)(**) (**) )
+   NXB  XIO  [1,3] (*FaultR*) (**)  XIC  [2,3] (*BodyHigh*) (**)
+ BND
+  OTE  [4,0] (*BodyHigh*) (**)
+EOR [5,0]
+
+
+(*Jaw High Position*)
+
+SOR  [0,104] (**) (**)  
+ BST  FB  [1,0] (*>=*) (*2*) ( (*EN:EN*)(**) (**)  , (*i1:*)(*ModbusAnalogInput[4]*) (**)  , (*i2:*)(*240*) (**) ; (*o1:*)(**) (**) )
+   NXB  XIO  [1,3] (*FaultR*) (**)  XIC  [2,3] (*JawHigh*) (**)
+ BND
+  OTE  [4,0] (*JawHigh*) (**)
+EOR [5,0]
+
+
+(*Skull High Position*)
+
+SOR  [0,109] (**) (**)  
+ BST  FB  [1,0] (*>=*) (*2*) ( (*EN:EN*)(**) (**)  , (*i1:*)(*ModbusAnalogInput[5]*) (**)  , (*i2:*)(*240*) (**) ; (*o1:*)(**) (**) )
+   NXB  XIO  [1,3] (*FaultR*) (**)  XIC  [2,3] (*SkullHigh*) (**)
+ BND
+  OTE  [4,0] (*SkullHigh*) (**)
+EOR [5,0]
+
+
+(*Tail High Position*)
+
+SOR  [0,114] (**) (**)  
+ BST  FB  [1,0] (*>=*) (*2*) ( (*EN:EN*)(**) (**)  , (*i1:*)(*ModbusAnalogInput[6]*) (**)  , (*i2:*)(*240*) (**) ; (*o1:*)(**) (**) )
+   NXB  XIO  [1,3] (*FaultR*) (**)  XIC  [2,3] (*TailHigh*) (**)
+ BND
+  OTE  [4,0] (*TailHigh*) (**)
+EOR [5,0]
+
+
+(*NeckYaw High Current*)
+
+SOR  [0,119] (**) (**)  
+ BST  FB  [1,0] (*>=*) (*2*) ( (*EN:EN*)(**) (**)  , (*i1:*)(*ModbusAnalogInput[7]*) (**)  , (*i2:*)(*100*) (**) ; (*o1:*)(**) (**) )
+   NXB  XIO  [1,3] (*FaultR*) (**)  XIC  [2,3] (*NeckYawCurr*) (**)
+ BND
+  OTE  [4,0] (*NeckYawCurr*) (**)
+EOR [5,0]
+
+
+(*NeckPitch High Current*)
+
+SOR  [0,124] (**) (**)  
+ BST  FB  [1,0] (*>=*) (*2*) ( (*EN:EN*)(**) (**)  , (*i1:*)(*ModbusAnalogInput[8]*) (**)  , (*i2:*)(*100*) (**) ; (*o1:*)(**) (**) )
+   NXB  XIO  [1,3] (*FaultR*) (**)  XIC  [2,3] (*NeckPitchCurr*) (**)
+ BND
+  OTE  [4,0] (*NeckPitchCurr*) (**)
+EOR [5,0]
+
+
+(*Body High Current*)
+
+SOR  [0,129] (**) (**)  
+ BST  FB  [1,0] (*>=*) (*2*) ( (*EN:EN*)(**) (**)  , (*i1:*)(*ModbusAnalogInput[9]*) (**)  , (*i2:*)(*100*) (**) ; (*o1:*)(**) (**) )
+   NXB  XIO  [1,3] (*FaultR*) (**)  XIC  [2,3] (*BodyCurr*) (**)
+ BND
+  OTE  [4,0] (*BodyCurr*) (**)
+EOR [5,0]
+
+
+(*Jaw High Current*)
+
+SOR  [0,134] (**) (**)  
+ BST  FB  [1,0] (*>=*) (*2*) ( (*EN:EN*)(**) (**)  , (*i1:*)(*ModbusAnalogInput[10]*) (**)  , (*i2:*)(*100*) (**) ; (*o1:*)(**) (**) )
+   NXB  XIO  [1,3] (*FaultR*) (**)  XIC  [2,3] (*JawCurr*) (**)
+ BND
+  OTE  [4,0] (*JawCurr*) (**)
+EOR [5,0]
+
+
+(*Skull High Current*)
+
+SOR  [0,139] (**) (**)  
+ BST  FB  [1,0] (*>=*) (*2*) ( (*EN:EN*)(**) (**)  , (*i1:*)(*ModbusAnalogInput[11]*) (**)  , (*i2:*)(*100*) (**) ; (*o1:*)(**) (**) )
+   NXB  XIO  [1,3] (*FaultR*) (**)  XIC  [2,3] (*SkullCurr*) (**)
+ BND
+  OTE  [4,0] (*SkullCurr*) (**)
+EOR [5,0]
+
+
+(*Tail High Current*)
+
+SOR  [0,144] (**) (**)  
+ BST  FB  [1,0] (*>=*) (*2*) ( (*EN:EN*)(**) (**)  , (*i1:*)(*ModbusAnalogInput[12]*) (**)  , (*i2:*)(*100*) (**) ; (*o1:*)(**) (**) )
+   NXB  XIO  [1,3] (*FaultR*) (**)  XIC  [2,3] (*TailCurr*) (**)
+ BND
+  OTE  [4,0] (*TailCurr*) (**)
+EOR [5,0]
+
+
+(**)
+
+SOR  [0,149] (**) (**)  FB  [1,0] (*=*) (*3*) ( (*EN:EN*)(**) (**)  , (*i1:*)(*ModbusDigitalOutput[6]*) (**)  , (*i2:*)(*HeartBeat*) (**) ; (*o1:*)(**) (**) )  FB  [4,0] (*TON*) (*TON_7*) ( (*IN:IN*)(**) (**)  , (*PT:PT*)(*T#1s*) (**) ; (*Q:Q*)(**) (**)  , (*ET:ET*)(**) (**) )  OTE  [7,0] (*FaultHeart*) (**)
+EOR [8,0]
+
+
+(**)
+
+SOR  [0,153] (**) (**)  FB  [1,0] (*1 gain*) (*4*) ( (*EN:EN*)(**) (**)  , (*i1:*)(*ModbusDigitalOutput[6]*) (**) ; (*ENO:ENO*)(**) (**)  , (*o1:*)(*HeartBeat*) (**) )
+EOR [4,0]
+EOF
+#end_info
+#info= ID_MAX
+NextId=4
+#end_info
+END_PROGRAM
