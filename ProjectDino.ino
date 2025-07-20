@@ -1,3 +1,4 @@
+#include <Arduino.h>
 #include <Ethernet.h>
 #include <ArduinoModbus.h>
 #include <Dynamixel2Arduino.h>
@@ -31,17 +32,42 @@ ModbusTCPClient modbusClient(ethClient);
 #define Jaw         40
 #define Skull       50
 
+// Stepper definitions
+#define EN_PIN 20 // PA06
+#define STEP_PIN 19 // PA05
+#define DIR_PIN  18 // PA04
+
+// LED definition
+#define LED_PIN 32 // PB08
+
+//  Stepper Configuration 
+volatile uint32_t stepIntervalMicros = 1000;
+const uint16_t stepsPerMove = 7500;
+volatile uint16_t stepsRemaining = stepsPerMove;
+volatile uint16_t stepsDone = 0;           // Track how far into profile
+volatile bool stepPinState = false;
+volatile bool stepperEnabled = false;
+volatile bool updateSpeed = false;
+volatile bool goingBack = false;
+volatile bool stepperHasRun = false;
+
+//  Acceleration Config 
+const uint16_t minInterval = 400;      // Fastest µs per step
+const uint16_t maxInterval = 1500;     // Slowest µs per step
+const uint16_t accelRampLength = 2000; // Number of steps to fully accelerate
+
 Dynamixel2Arduino dxl(DXL_SERIAL, DXL_DIR_PIN);
 using namespace ControlTableItem;
 
 // Global Variables
 const float DXL_PROTOCOL_VERSION = 2.0;
-volatile int pselect = 0;
+volatile int proselect = 0;
 volatile int state = 0;
 volatile int run = 0;
 const uint8_t DXL_IDS[] = {NeckYaw, NeckPitch, Body, Jaw, Skull, Tail};
 const uint16_t MODBUS_POSITION_ADDRS[] = {0, 1, 2, 3, 4, 5};
 const uint16_t MODBUS_CURRENT_ADDRS[] = {6, 7, 8, 9, 10, 11};
+const uint16_t DYNAMIXEL_FAULT_ADDRS[] = {15, 16, 17, 18, 19, 20};
 volatile uint32_t timerStartValue = 0;
 volatile uint32_t lastTimerCount = 0;
 volatile uint32_t ProfileT = 0;
@@ -62,13 +88,11 @@ volatile bool MBEnable = true;
 volatile bool OneTimeA = false;
 volatile bool OneTimeM = false;
 volatile bool OneTimeO = false;
+volatile bool DynMtrReset = false;
+volatile bool HomeCommand = false;
+volatile bool HomeSet = false;
 
-// Group definitions
-const uint8_t groupNeckBase[] = {NeckYaw, NeckPitch};
-const uint8_t groupJawSkull[] = {Jaw, Skull};
-const uint8_t groupAll[] = {NeckYaw, NeckPitch, Body, Tail, Jaw, Skull};
-
-// Single Dynamixel movement
+// Set Dynamixel Position if Allowed
 void setGoalPosition(uint8_t id, float degrees) {
   switch (id) {
     case NeckYaw:
@@ -95,14 +119,31 @@ void setGoalPosition(uint8_t id, float degrees) {
   }
 }
 
-// Group Dynamixel movement
-void setGoalPositionToGroup(const uint8_t* ids, uint8_t count, float degrees) {
-  for (uint8_t i = 0; i < count; i++) {
-    setGoalPosition(ids[i], degrees);
+// Reset Dynamixel Motors if needed
+void resetIfFault() {
+  for(uint8_t id : DXL_IDS){
+    uint8_t err = dxl.readControlTableItem(HARDWARE_ERROR_STATUS, id);
+    if (err != 0) {
+      DEBUG_SERIAL.print(err, HEX);
+      dxl.reboot(id);  // Sends Protocol 2.0 REBOOT instruction
+      delay(200);      // Wait for reboot
+      dxl.torqueOn(id);
+    }
   }
 }
 
-// Timer Setup
+void HomeFig() {
+  if (!HomeSet){
+    setGoalPosition(Jaw, 190);
+    // Set Home Positions for Dynamixels
+  }
+
+  // Run Stepper Backwards until home sensor flags.
+
+
+}
+
+// Timer Setup Profile TC5
 void setupTimer() {
   GCLK->CLKCTRL.reg = GCLK_CLKCTRL_ID(GCLK_CLKCTRL_ID_TC4_TC5) | GCLK_CLKCTRL_GEN_GCLK0 | GCLK_CLKCTRL_CLKEN;
   while (GCLK->STATUS.bit.SYNCBUSY);
@@ -112,7 +153,80 @@ void setupTimer() {
   SerialUSB.println("32-bit Timer Configured.");
 }
 
-// Main Setup 
+// Timer Setup Stepper TC3
+void setupStepperTimer(uint32_t intervalMicros) {
+  // Use TC3 clock ID
+  GCLK->CLKCTRL.reg = GCLK_CLKCTRL_ID_TCC2_TC3 | GCLK_CLKCTRL_GEN_GCLK0 | GCLK_CLKCTRL_CLKEN;
+  while (GCLK->STATUS.bit.SYNCBUSY);
+
+  PM->APBCMASK.reg |= PM_APBCMASK_TC3;
+
+  TC3->COUNT16.CTRLA.reg =
+    TC_CTRLA_MODE_COUNT16 |
+    TC_CTRLA_PRESCALER_DIV16 |
+    TC_CTRLA_WAVEGEN_MFRQ;
+
+  TC3->COUNT16.CTRLA.bit.ENABLE = 0;
+  while (TC3->COUNT16.STATUS.bit.SYNCBUSY);
+
+  TC3->COUNT16.CC[0].reg = (3000000 / (1000000 / intervalMicros));
+  while (TC3->COUNT16.STATUS.bit.SYNCBUSY);
+
+  TC3->COUNT16.INTENSET.bit.MC0 = 1;
+  NVIC_EnableIRQ(TC3_IRQn);
+
+  TC3->COUNT16.CTRLA.bit.ENABLE = 1;
+  while (TC3->COUNT16.STATUS.bit.SYNCBUSY);
+}
+
+// Stepper Acceleration
+void adjustAcceleration() {
+  if (stepsDone < accelRampLength) {
+    stepIntervalMicros = maxInterval - ((maxInterval - minInterval) * stepsDone) / accelRampLength;
+  } else if (stepsRemaining < accelRampLength) {
+    stepIntervalMicros = maxInterval - ((maxInterval - minInterval) * stepsRemaining) / accelRampLength;
+  } else {
+    stepIntervalMicros = minInterval;
+  }
+
+  TC3->COUNT16.CC[0].reg = (3000000 / (1000000 / stepIntervalMicros));
+  while (TC3->COUNT16.STATUS.bit.SYNCBUSY);
+}
+
+// Stepper Timer ISR TC3
+void TC3_Handler() {
+  TC3->COUNT16.INTFLAG.bit.MC0 = 1;
+
+  if (!stepperEnabled || stepsRemaining == 0) return;
+
+  stepPinState = !stepPinState;
+  digitalWrite(STEP_PIN, stepPinState);
+
+  if (!stepPinState) {
+    stepsRemaining--;
+    stepsDone++;
+    updateSpeed = true;
+
+    if (stepsRemaining == 0) {
+      if (!goingBack) {
+        // Begin reverse
+        goingBack = true;
+        stepsRemaining = stepsPerMove;
+        stepsDone = 0;
+        digitalWrite(DIR_PIN, LOW);
+        stepperEnabled = true;
+        SerialUSB.println("AutoMode: Returning...");
+      } 
+      else {
+        // Done
+        stepperEnabled = false;
+        SerialUSB.println("AutoMode: Stepper round-trip complete.");
+      }
+    }
+  }
+}
+
+// Main setup 
 void setup() {
   SerialUSB.begin(115200);
   while (!SerialUSB);
@@ -125,21 +239,51 @@ void setup() {
   }
   dxl.begin(57600);
   dxl.setPortProtocolVersion(DXL_PROTOCOL_VERSION);
-  for (uint8_t id : DXL_IDS) {
+  for (uint8_t id : DXL_IDS){
     dxl.ping(id);
     dxl.torqueOff(id);
+    dxl.writeControlTableItem(PROFILE_VELOCITY, id, 15);
     dxl.setOperatingMode(id, OP_POSITION);
   }
+  dxl.writeControlTableItem(PROFILE_VELOCITY, NeckYaw, 30);
+
+  // READ current Shutdown settings
+  uint8_t shutdown_mask = dxl.readControlTableItem(SHUTDOWN, NeckYaw);
+  DEBUG_SERIAL.print("Shutdown original mask: 0x");
+  DEBUG_SERIAL.println(shutdown_mask, HEX);
+
+  // CLEAR overload bit (bit 5 / 0x20)
+  uint8_t new_mask = shutdown_mask & ~0x20;
+  dxl.writeControlTableItem(SHUTDOWN, NeckYaw, new_mask);
+  DEBUG_SERIAL.print("Shutdown updated mask: 0x");
+  DEBUG_SERIAL.println(new_mask, HEX);
+  
+  // Profile Timer
   setupTimer();
+
+  // Stepper Setup
+  pinMode(EN_PIN, OUTPUT);
+  pinMode(STEP_PIN, OUTPUT);
+  pinMode(DIR_PIN, OUTPUT);
+  digitalWrite(DIR_PIN, HIGH);
+
+  setupStepperTimer(stepIntervalMicros);
+
+  // LED initialize
+  pinMode(LED_PIN, OUTPUT);
+  digitalWrite(LED_PIN, LOW);
 }
 
+// Update all modbus variables
 void updateModbus() {
   // Update Dynamixel Status
   for (int i = 0; i < 6; i++) {
     int32_t currentPosition = dxl.getPresentPosition(DXL_IDS[i], UNIT_DEGREE);
     float currentReading = dxl.getPresentCurrent(DXL_IDS[i], UNIT_MILLI_AMPERE);
+    uint8_t fault = dxl.readControlTableItem(HARDWARE_ERROR_STATUS, DXL_IDS[i]);
     modbusClient.holdingRegisterWrite(MODBUS_POSITION_ADDRS[i], currentPosition);
     modbusClient.holdingRegisterWrite(MODBUS_CURRENT_ADDRS[i], static_cast<int32_t>(currentReading));
+    modbusClient.holdingRegisterWrite(DYNAMIXEL_FAULT_ADDRS[i], fault);
   }
 
   // Read Coils
@@ -155,31 +299,35 @@ void updateModbus() {
   SkullEnable = modbusClient.coilRead(10);
   TailEnable = modbusClient.coilRead(11);
   MBEnable = modbusClient.coilRead(12);
+  DynMtrReset = modbusClient.coilRead(13);
+  HomeCommand = modbusClient.coilRead(14);
 
   // Read Holding Registers
-  pselect = modbusClient.holdingRegisterRead(13);
+  proselect = modbusClient.holdingRegisterRead(13);
 
   // Write Coils
   modbusClient.coilWrite(5, Heart);
 
   // Write Holding Registers
   modbusClient.holdingRegisterWrite(12, state);
+  modbusClient.holdingRegisterWrite(14, ProfileT);
 
 }
 
-void AutoMode(){
+// Auto Mode Switch
+void AutoMode() {
   if (!OneTimeA){
     OneTimeM = 0;
     OneTimeO = 0;
 
-    // Anything one time on switch goes here
-
     for (uint8_t id : DXL_IDS) {
       dxl.torqueOn(id);
-      dxl.writeControlTableItem(PROFILE_VELOCITY, id, 7);
+      dxl.writeControlTableItem(PROFILE_VELOCITY, id, 15);
     }
 
-    // ADD Enable pin for stepper ON
+    // normal speed stepper & sets the initial direction to be forward
+    minInterval = 400;
+    digitalWrite(DIR_PIN, HIGH);
 
     OneTimeA = 1;
   }
@@ -190,7 +338,19 @@ void AutoMode(){
       timerRunning = true;
       SerialUSB.println("Timer Started.");
     }
+
     hasHeldPose = false;
+
+    if (!stepperEnabled && !stepperHasRun && MBEnable) {
+      // Start stepper forward
+      stepsRemaining = stepsPerMove;
+      stepsDone = 0;
+      goingBack = false;
+      digitalWrite(DIR_PIN, HIGH);
+      stepperEnabled = true;
+      stepperHasRun = true;
+      SerialUSB.println("AutoMode: Stepper started forward.");
+    }
   } else {
     if (timerRunning) {
       lastTimerCount = TC4->COUNT32.COUNT.reg - timerStartValue;
@@ -198,6 +358,7 @@ void AutoMode(){
       SerialUSB.println("Timer Paused.");
       if (state > 1) state--;
     }
+
     if (!hasHeldPose) {
       for (uint8_t id : DXL_IDS) {
         int32_t currentPosition = dxl.getPresentPosition(id, UNIT_DEGREE);
@@ -205,6 +366,13 @@ void AutoMode(){
       }
       hasHeldPose = true;
     }
+
+    // Stop stepper if still running
+    if (stepperEnabled) {
+      stepperEnabled = false;
+      SerialUSB.println("AutoMode: Stepper forcibly stopped.");
+    }
+    stepperHasRun = false;
   }
 
   if (timerRunning) {
@@ -217,7 +385,7 @@ void AutoMode(){
     SerialUSB.print(elapsedSeconds, 3);
     SerialUSB.println(" sec");
 
-    if (elapsedSeconds >= 20.0 && !ProfileComplete) {
+    if (elapsedSeconds >= 25.0 && !ProfileComplete) {
       modbusClient.coilWrite(1, 1);
       state = 0;
       SerialUSB.println("Profile Complete! Timer Reset.");
@@ -226,14 +394,14 @@ void AutoMode(){
     }
   }
 
-  if(pselect == 0){
+  if (proselect == 0) {
     MainProfile();
   }
 
-
-  
+  MainProfile();
 }
 
+// Maintenance Mode Switch
 void MaintMode(){
   if (!OneTimeM){
     OneTimeA = 0;
@@ -244,21 +412,51 @@ void MaintMode(){
       dxl.torqueOn(id);
       int32_t currentPosition = dxl.getPresentPosition(id, UNIT_DEGREE);
       dxl.setGoalPosition(id, currentPosition, UNIT_DEGREE);
+      dxl.writeControlTableItem(PROFILE_VELOCITY, id, 7);
     }
 
-    // ADD something for stepper
+    // slow stepper
+     minInterval = 1000;
 
     OneTimeM = 1;
   }
 
+  // Profile Select Occurs Purely via Modbus
+
+  // Stop Reset and Fault Reset purely in PLC
+
+  // Ignore Fault / Fault Bypass is purely in PLC
+
+  // Home Figure
+  if (HomeCommand){
+    HomeFig();
+  }
+  else{
+    HomeSet = 0;
+  }
+  // Motor Reset
+  if (DynMtrReset){
+    resetIfFault();
+  }
+
+  // Manual Axis Movement
+
+
+
+  // Maint Profile
+
+
+
 }
 
+// Off Mode Switch
 void OffMode(){
   if (!OneTimeO){
     OneTimeM = 0;
     OneTimeA = 0;
 
     // Anything one time on switch goes here
+
     for (uint8_t id : DXL_IDS) {
       dxl.torqueOff(id);
     }
@@ -268,123 +466,234 @@ void OffMode(){
     OneTimeO = 1;
   }
 
+  // Do Nothing, Off.
+
 }
 
+// Main Profile (P1)
 void MainProfile() {
-  // Motion profile steps
+
   if (ProfileT > 0 && state == 0) {
-    setGoalPositionToGroup(groupAll, sizeof(groupAll), 180);
+    setGoalPosition(Jaw, 190);
+    setGoalPosition(Skull, 180);
+    setGoalPosition(NeckPitch, 180);
+    setGoalPosition(NeckYaw, 100);
+    setGoalPosition(Body, 180);
+    setGoalPosition(Tail, 180);
     state++;
   }
 
+
   if (ProfileT >= 1 && state == 1) {
+    setGoalPosition(Jaw, 210);
+    setGoalPosition(Skull, 170);
+    setGoalPosition(NeckPitch, 190);
+    setGoalPosition(NeckYaw, 95);
+    setGoalPosition(Body, 185);
+    setGoalPosition(Tail, 190);
     state++;
   }
 
   if (ProfileT >= 2 && state == 2) {
-    setGoalPosition(Jaw, 190);
+    setGoalPosition(Jaw, 180);
+    setGoalPosition(Skull, 190);
+    setGoalPosition(NeckPitch, 170);
+    setGoalPosition(NeckYaw, 105);
+    setGoalPosition(Body, 175);
+    setGoalPosition(Tail, 170);
     state++;
   }
 
   if (ProfileT >= 3 && state == 3) {
+    setGoalPosition(Jaw, 20);
+    setGoalPosition(Skull, 170);
+    setGoalPosition(NeckPitch, 190);
+    setGoalPosition(NeckYaw, 95);
+    setGoalPosition(Body, 185);
+    setGoalPosition(Tail, 190);
     state++;
   }
 
   if (ProfileT >= 4 && state == 4) {
-    setGoalPositionToGroup(groupAll, sizeof(groupAll), 170);
+    setGoalPosition(Jaw, 180);
+    setGoalPosition(Skull, 190);
+    setGoalPosition(NeckPitch, 170);
+    setGoalPosition(NeckYaw, 105);
+    setGoalPosition(Body, 175);
+    setGoalPosition(Tail, 170);
     state++;
   }
 
   if (ProfileT >= 5 && state == 5) {
+    setGoalPosition(Jaw, 210);
+    setGoalPosition(Skull, 170);
+    setGoalPosition(NeckPitch, 190);
+    setGoalPosition(NeckYaw, 95);
+    setGoalPosition(Body, 185);
+    setGoalPosition(Tail, 190);
     state++;
   }
 
   if (ProfileT >= 6 && state == 6) {
-    setGoalPositionToGroup(groupAll, sizeof(groupAll), 180);
+    setGoalPosition(Jaw, 180);
+    setGoalPosition(Skull, 190);
+    setGoalPosition(NeckPitch, 170);
+    setGoalPosition(NeckYaw, 105);
+    setGoalPosition(Body, 175);
+    setGoalPosition(Tail, 170);
     state++;
   }
+  
 
   if (ProfileT >= 7 && state == 7) {
+    setGoalPosition(Jaw, 210);
+    setGoalPosition(Skull, 170);
+    setGoalPosition(NeckPitch, 190);
+    setGoalPosition(NeckYaw, 95);
+    setGoalPosition(Body, 185);
+    setGoalPosition(Tail, 190);
     state++;
   }
 
   if (ProfileT >= 8 && state == 8) {
-    setGoalPositionToGroup(groupAll, sizeof(groupAll), 160);
+    setGoalPosition(Jaw, 180);
+    setGoalPosition(Skull, 190);
+    setGoalPosition(NeckPitch, 170);
+    setGoalPosition(NeckYaw, 105);
+    setGoalPosition(Body, 175);
+    setGoalPosition(Tail, 170);
     state++;
   }
 
   if (ProfileT >= 9 && state == 9) {
+    setGoalPosition(Jaw, 210);
+    setGoalPosition(Skull, 170);
+    setGoalPosition(NeckPitch, 190);
+    setGoalPosition(NeckYaw, 95);
+    setGoalPosition(Body, 185);
+    setGoalPosition(Tail, 190);
     state++;
   }
 
   if (ProfileT >= 10 && state == 10) {
-    setGoalPositionToGroup(groupAll, sizeof(groupAll), 180);
+    setGoalPosition(Jaw, 180);
+    setGoalPosition(Skull, 190);
+    setGoalPosition(NeckPitch, 170);
+    setGoalPosition(NeckYaw, 105);
+    setGoalPosition(Body, 175);
+    setGoalPosition(Tail, 170);
     state++;
   }
 
   if (ProfileT >= 11 && state == 11) {
+    setGoalPosition(Jaw, 210);
+    setGoalPosition(Skull, 170);
+    setGoalPosition(NeckPitch, 190);
+    setGoalPosition(NeckYaw, 95);
+    setGoalPosition(Body, 185);
+    setGoalPosition(Tail, 190);
     state++;
   }
 
   if (ProfileT >= 12 && state == 12) {
-    setGoalPositionToGroup(groupAll, sizeof(groupAll), 170);
+    setGoalPosition(Jaw, 180);
+    setGoalPosition(Skull, 190);
+    setGoalPosition(NeckPitch, 170);
+    setGoalPosition(NeckYaw, 105);
+    setGoalPosition(Body, 175);
+    setGoalPosition(Tail, 170);
     state++;
   }
 
   if (ProfileT >= 13 && state == 13) {
+    setGoalPosition(Jaw, 210);
+    setGoalPosition(Skull, 170);
+    setGoalPosition(NeckPitch, 190);
+    setGoalPosition(NeckYaw, 95);
+    setGoalPosition(Body, 185);
+    setGoalPosition(Tail, 190);
     state++;
   }
 
   if (ProfileT >= 14 && state == 14) {
-    setGoalPositionToGroup(groupAll, sizeof(groupAll), 190);
+    setGoalPosition(Jaw, 180);
+    setGoalPosition(Skull, 190);
+    setGoalPosition(NeckPitch, 170);
+    setGoalPosition(NeckYaw, 105);
+    setGoalPosition(Body, 175);
+    setGoalPosition(Tail, 170);
     state++;
   }
 
   if (ProfileT >= 15 && state == 15) {
+    setGoalPosition(Jaw, 210);
+    setGoalPosition(Skull, 170);
+    setGoalPosition(NeckPitch, 190);
+    setGoalPosition(NeckYaw, 95);
+    setGoalPosition(Body, 185);
+    setGoalPosition(Tail, 190);
     state++;
   }
 
   if (ProfileT >= 16 && state == 16) {
-    setGoalPositionToGroup(groupAll, sizeof(groupAll), 170);
+    setGoalPosition(Jaw, 180);
+    setGoalPosition(Skull, 190);
+    setGoalPosition(NeckPitch, 170);
+    setGoalPosition(NeckYaw, 105);
+    setGoalPosition(Body, 175);
+    setGoalPosition(Tail, 170);
     state++;
   }
 
   if (ProfileT >= 17 && state == 17) {
+    setGoalPosition(Jaw, 210);
+    setGoalPosition(Skull, 170);
+    setGoalPosition(NeckPitch, 190);
+    setGoalPosition(NeckYaw, 95);
+    setGoalPosition(Body, 185);
+    setGoalPosition(Tail, 190);
     state++;
   }
 
   if (ProfileT >= 18 && state == 18) {
-    setGoalPositionToGroup(groupAll, sizeof(groupAll), 180);
+    setGoalPosition(Jaw, 190);
+    setGoalPosition(Skull, 180);
+    setGoalPosition(NeckYaw, 100);
+    setGoalPosition(Body, 180);
+    setGoalPosition(Tail, 180);
+    setGoalPosition(NeckPitch, 180);
     state++;
   }
 }
 
+// Main loop
 void loop() {
   if (!modbusClient.connected()) {
     SerialUSB.println("Modbus connection lost. Attempting to reconnect...");
     if (!modbusClient.begin(plcIp)) {
       SerialUSB.println("Reconnection failed. Will retry...");
-      // ADD FLASHING LED PB08
-      delay(1000);
+      digitalWrite(LED_PIN, HIGH);
+      OffMode();
+      delay(500);
       return;
     }
     SerialUSB.println("Reconnected to Modbus server.");
   }
 
-  if(Auto){
-    AutoMode();
-  }
+  if (Auto) AutoMode();
+  if (Maint) MaintMode();
+  if (Off) OffMode();
 
-  if(Maint){
-    MaintMode();
-  }
-
-  if(Off){
-    OffMode();
+  if (updateSpeed) {
+    noInterrupts();
+    updateSpeed = false;
+    adjustAcceleration();
+    interrupts();
   }
   
   // Heartbeat and Modbus Update
   Heart = !Heart;
   updateModbus();
+  digitalWrite(LED_PIN, LOW);
   delay(10);
 }
